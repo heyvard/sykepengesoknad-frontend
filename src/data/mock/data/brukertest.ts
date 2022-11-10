@@ -3,16 +3,19 @@ import dayjs from 'dayjs'
 import { RSSoknad } from '../../../types/rs-types/rs-soknad'
 import { Sykmelding } from '../../../types/sykmelding'
 import { Persona } from '../personas'
-import { tilLesbarPeriodeMedArstall } from '../../../utils/dato-utils'
+import { tilLesbarPeriodeMedArstall, tilLesbarPeriodeMedArstallOgUkedag } from '../../../utils/dato-utils'
+import { RSSporsmal } from '../../../types/rs-types/rs-sporsmal'
 
 const url = new URL(window.location.href)
 
 const hovedjobb = url.searchParams.get('hovedjobb') ?? 'Matbutikken AS'
-const fom = url.searchParams.get('fom') ?? '2022-09-08'
-const tom = url.searchParams.get('tom') ?? '2022-09-21'
+const fomQuery = url.searchParams.get('fom') ?? '2022-10-03'
+const tomQuery = url.searchParams.get('tom') ?? '2022-10-23'
 
-const periodeTekst = tilLesbarPeriodeMedArstall(dayjs(fom), dayjs(tom))
-const fravaerFoerTekst = tilLesbarPeriodeMedArstall(dayjs(fom).subtract(16, 'days'), dayjs(fom).subtract(1, 'day'))
+const fom = dayjs(fomQuery)
+const tom = dayjs(tomQuery)
+const periodeTekst = tilLesbarPeriodeMedArstall(fom, tom)
+const fravaerFoerTekst = tilLesbarPeriodeMedArstall(fom.subtract(16, 'days'), fom.subtract(1, 'day'))
 export const brukertestSykmelding = new Sykmelding({
     id: 'abc5acf2-a44f-42e5-87b2-02c9d0b39ce8',
     pasient: {
@@ -27,8 +30,8 @@ export const brukertestSykmelding = new Sykmelding({
     arbeidsgiver: { navn: hovedjobb, stillingsprosent: 100 },
     sykmeldingsperioder: [
         {
-            fom: fom,
-            tom: tom,
+            fom: fomQuery,
+            tom: tomQuery,
             gradert: null,
             behandlingsdager: null,
             innspillTilArbeidsgiver: null,
@@ -72,7 +75,7 @@ export const brukertestSykmelding = new Sykmelding({
         annenFraversArsak: null,
         svangerskap: false,
         yrkesskade: false,
-        yrkesskadeDato: fom,
+        yrkesskadeDato: fomQuery,
     },
     skjermesForPasient: false,
     prognose: {
@@ -81,8 +84,8 @@ export const brukertestSykmelding = new Sykmelding({
         erIArbeid: {
             egetArbeidPaSikt: true,
             annetArbeidPaSikt: true,
-            arbeidFOM: fom,
-            vurderingsdato: fom,
+            arbeidFOM: fomQuery,
+            vurderingsdato: fomQuery,
         },
         erIkkeIArbeid: null,
     },
@@ -107,7 +110,7 @@ export const brukertestSykmelding = new Sykmelding({
         },
         tlf: 'tel:94431152',
     },
-    syketilfelleStartDato: fom,
+    syketilfelleStartDato: fomQuery,
     navnFastlege: 'Victor Frankenstein',
     egenmeldt: false,
     papirsykmelding: false,
@@ -139,27 +142,112 @@ export const brukertestSykmelding = new Sykmelding({
     },
 })
 
+function getNextMonday(date: dayjs.Dayjs) {
+    const dateCopy = new Date(date.toDate().getTime())
+
+    const nextMonday = new Date(dateCopy.setDate(dateCopy.getDate() + ((7 - dateCopy.getDay() + 1) % 7 || 7)))
+
+    return dayjs(nextMonday)
+}
+
+function getNextSunday(date: dayjs.Dayjs) {
+    return getNextMonday(date).subtract(1, 'day')
+}
+
+const ukePerioder: { fom: dayjs.Dayjs; tom: dayjs.Dayjs }[] = []
+let nesteStart = fom
+while (tom.isAfter(nesteStart)) {
+    const sondag = getNextSunday(nesteStart)
+    if (sondag.isAfter(tom)) {
+        ukePerioder.push({ fom: nesteStart, tom: tom })
+    } else {
+        ukePerioder.push({ fom: nesteStart, tom: sondag })
+    }
+    nesteStart = getNextMonday(nesteStart)
+}
+
+const sporsmalene = ukePerioder.map((p, i): RSSporsmal => {
+    const periodeTekst = tilLesbarPeriodeMedArstallOgUkedag(p.fom, p.tom)
+
+    return {
+        id: '4324235432' + i,
+        tag: 'JOBBET_DU_POC_UKE_ ' + i,
+        sporsmalstekst: `Hvor mange timer jobbet du i perioden ${periodeTekst} hos ${hovedjobb}?`,
+        undertekst: null,
+        svartype: 'TALL',
+        min: '1',
+        max: '150',
+        pavirkerAndreSporsmal: false,
+        kriterieForVisningAvUndersporsmal: null,
+        svar: [],
+        undersporsmal: [],
+    }
+})
+
+const jobbetDu: RSSporsmal = {
+    id: '1623841',
+    tag: 'JOBBET_DU_POC',
+    sporsmalstekst: `I perioden ${periodeTekst} var du sykmeldt fra ${hovedjobb}. Jobbet du noe i denne perioden?`,
+    undertekst: null,
+    svartype: 'JA_NEI',
+    min: null,
+    max: null,
+    pavirkerAndreSporsmal: false,
+    kriterieForVisningAvUndersporsmal: 'JA',
+    svar: [],
+    undersporsmal: [
+        ...sporsmalene,
+        {
+            id: '1623842456',
+            tag: 'HVOR_MANGE_TIMER_PER_UKE_0',
+            sporsmalstekst: `Jobber du vanligvis 37,5 timer i uka hos ${hovedjobb}?`,
+            undertekst: null,
+            svartype: 'JA_NEI',
+            min: null,
+            max: null,
+            pavirkerAndreSporsmal: false,
+            kriterieForVisningAvUndersporsmal: 'NEI',
+            svar: [],
+            undersporsmal: [
+                {
+                    id: '42342112',
+                    tag: 'HVOR_MANGE_TIMER_PER_UKE_POC',
+                    sporsmalstekst:
+                        'Hvor mange timer i uken jobber du vanligvis? Varierer det, kan du oppgi gjennomsnittet.',
+                    undertekst: null,
+                    svartype: 'TALL',
+                    min: '1',
+                    max: '150',
+                    pavirkerAndreSporsmal: false,
+                    kriterieForVisningAvUndersporsmal: null,
+                    svar: [],
+                    undersporsmal: [],
+                },
+            ],
+        },
+    ],
+}
 export const brukertestSoknad: RSSoknad = {
     id: '963e816f-7b3c-4513-818b-95595d84dd91',
     sykmeldingId: 'abc5acf2-a44f-42e5-87b2-02c9d0b39ce8',
     soknadstype: 'ARBEIDSTAKERE',
     status: 'NY',
-    fom: fom,
-    tom: tom,
+    fom: fomQuery,
+    tom: tomQuery,
     opprettetDato: '2022-11-17',
     sendtTilNAVDato: null,
     sendtTilArbeidsgiverDato: null,
     avbruttDato: null,
-    startSykeforlop: fom,
-    sykmeldingUtskrevet: fom,
+    startSykeforlop: fomQuery,
+    sykmeldingUtskrevet: fomQuery,
     arbeidsgiver: { navn: `${hovedjobb}`, orgnummer: '967170232' },
     korrigerer: null,
     korrigertAv: null,
     arbeidssituasjon: 'ARBEIDSTAKER',
     soknadPerioder: [
         {
-            fom: fom,
-            tom: tom,
+            fom: fomQuery,
+            tom: tomQuery,
             grad: 100,
             sykmeldingstype: 'AKTIVITET_IKKE_MULIG',
         },
@@ -225,8 +313,8 @@ export const brukertestSoknad: RSSoknad = {
                     sporsmalstekst: 'Når begynte du å jobbe igjen?',
                     undertekst: null,
                     svartype: 'DATO',
-                    min: fom,
-                    max: tom,
+                    min: fomQuery,
+                    max: tomQuery,
                     pavirkerAndreSporsmal: true,
                     kriterieForVisningAvUndersporsmal: null,
                     svar: [],
@@ -252,8 +340,8 @@ export const brukertestSoknad: RSSoknad = {
                     sporsmalstekst: 'Når tok du ut feriedager?',
                     undertekst: null,
                     svartype: 'PERIODER',
-                    min: fom,
-                    max: tom,
+                    min: fomQuery,
+                    max: tomQuery,
                     pavirkerAndreSporsmal: false,
                     kriterieForVisningAvUndersporsmal: null,
                     svar: [],
@@ -279,8 +367,8 @@ export const brukertestSoknad: RSSoknad = {
                     sporsmalstekst: 'Når tok du permisjon?',
                     undertekst: null,
                     svartype: 'PERIODER',
-                    min: fom,
-                    max: tom,
+                    min: fomQuery,
+                    max: tomQuery,
                     pavirkerAndreSporsmal: false,
                     kriterieForVisningAvUndersporsmal: null,
                     svar: [],
@@ -306,8 +394,8 @@ export const brukertestSoknad: RSSoknad = {
                     sporsmalstekst: 'Når var du utenfor EØS?',
                     undertekst: null,
                     svartype: 'PERIODER',
-                    min: fom,
-                    max: tom,
+                    min: fomQuery,
+                    max: tomQuery,
                     pavirkerAndreSporsmal: false,
                     kriterieForVisningAvUndersporsmal: null,
                     svar: [],
@@ -315,61 +403,7 @@ export const brukertestSoknad: RSSoknad = {
                 },
             ],
         },
-        {
-            id: '1623841',
-            tag: 'JOBBET_DU_POC',
-            sporsmalstekst: `I perioden ${periodeTekst} var du sykmeldt fra ${hovedjobb}. Jobbet du noe i denne perioden?`,
-            undertekst: null,
-            svartype: 'JA_NEI',
-            min: null,
-            max: null,
-            pavirkerAndreSporsmal: false,
-            kriterieForVisningAvUndersporsmal: 'JA',
-            svar: [],
-            undersporsmal: [
-                {
-                    id: '4324235432',
-                    tag: 'JOBBET_DU_POC_UKE_1',
-                    sporsmalstekst: `Hvor mange timer jobbet du i perioden ${periodeTekst} hos ${hovedjobb}?`,
-                    undertekst: null,
-                    svartype: 'TALL',
-                    min: '1',
-                    max: '150',
-                    pavirkerAndreSporsmal: false,
-                    kriterieForVisningAvUndersporsmal: null,
-                    svar: [],
-                    undersporsmal: [],
-                },
-                {
-                    id: '1623842456',
-                    tag: 'HVOR_MANGE_TIMER_PER_UKE_0',
-                    sporsmalstekst: `Jobber du vanligvis 37,5 timer i uka hos ${hovedjobb}?`,
-                    undertekst: null,
-                    svartype: 'JA_NEI',
-                    min: null,
-                    max: null,
-                    pavirkerAndreSporsmal: false,
-                    kriterieForVisningAvUndersporsmal: 'NEI',
-                    svar: [],
-                    undersporsmal: [
-                        {
-                            id: '42342112',
-                            tag: 'HVOR_MANGE_TIMER_PER_UKE_POC',
-                            sporsmalstekst:
-                                'Hvor mange timer i uken jobber du vanligvis? Varierer det, kan du oppgi gjennomsnittet.',
-                            undertekst: null,
-                            svartype: 'TALL',
-                            min: '1',
-                            max: '150',
-                            pavirkerAndreSporsmal: false,
-                            kriterieForVisningAvUndersporsmal: null,
-                            svar: [],
-                            undersporsmal: [],
-                        },
-                    ],
-                },
-            ],
-        },
+        jobbetDu,
 
         {
             id: '1623836',
@@ -536,7 +570,7 @@ export const brukertestSoknad: RSSoknad = {
                     undertekst: null,
                     svartype: 'DATO',
                     min: null,
-                    max: tom,
+                    max: tomQuery,
                     pavirkerAndreSporsmal: false,
                     kriterieForVisningAvUndersporsmal: null,
                     svar: [],

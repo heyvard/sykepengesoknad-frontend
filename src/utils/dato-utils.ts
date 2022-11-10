@@ -46,8 +46,33 @@ export const tilLesbarDatoUtenAarstall = (datoArg: any): string => {
     return ''
 }
 
+export const tilLesbarDatoUtenAarstallMedUkedag = (datoArg: dayjs.Dayjs): string => {
+    if (datoArg) {
+        const dato = dayjsToDate(datoArg.toString())!
+        const dag = dato.getDate()
+        const manedIndex = dato.getMonth()
+        const maned = maaneder[manedIndex]
+        console.log(ukedag(datoArg))
+        console.log(datoArg)
+        console.log(datoArg.toDate().getDay())
+        return `${ukedag(datoArg)} ${dag}. ${maned}`
+    }
+    return ''
+}
+
+export const dager = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag']
+
+export const ukedag = (datoArg: dayjs.Dayjs): string => {
+    const ukedag = datoArg.toDate().getDay()
+    return dager[ukedag]
+}
+
 export const tilLesbarDatoMedArstall = (datoArg: any) => {
     return datoArg ? `${tilLesbarDatoUtenAarstall(dayjsToDate(datoArg))} ${dayjsToDate(datoArg)!.getFullYear()}` : null
+}
+
+export const tilLesbarDatoMedArstallOgUkedag = (datoArg: dayjs.Dayjs) => {
+    return datoArg ? `${tilLesbarDatoUtenAarstallMedUkedag(datoArg)} ${dayjsToDate(datoArg)!.getFullYear()}` : null
 }
 
 export const tilLesbarPeriodeMedArstall = (fomArg: any, tomArg: any) => {
@@ -60,6 +85,20 @@ export const tilLesbarPeriodeMedArstall = (fomArg: any, tomArg: any) => {
         : erSammeAar
         ? `${tilLesbarDatoUtenAarstall(fom)} ${SKILLETEGN_PERIODE} ${tilLesbarDatoMedArstall(tom)}`
         : `${tilLesbarDatoMedArstall(fom)} ${SKILLETEGN_PERIODE} ${tilLesbarDatoMedArstall(tom)}`
+}
+
+export const tilLesbarPeriodeMedArstallOgUkedag = (fomArg: dayjs.Dayjs, tomArg: dayjs.Dayjs) => {
+    const fom = dayjsToDate(fomArg.toString())
+    const tom = dayjsToDate(tomArg.toString())
+    const erSammeAar = fom?.getFullYear() === tom?.getFullYear()
+    const erSammeMaaned = fom?.getMonth() === tom?.getMonth()
+    return erSammeAar && erSammeMaaned
+        ? `${ukedag(fomArg)} ${fom?.getDate()}. ${SKILLETEGN_PERIODE} ${tilLesbarDatoMedArstallOgUkedag(tomArg)}`
+        : erSammeAar
+        ? `${tilLesbarDatoUtenAarstallMedUkedag(fomArg)} ${SKILLETEGN_PERIODE} ${tilLesbarDatoMedArstallOgUkedag(
+              tomArg,
+          )}`
+        : `${tilLesbarDatoMedArstallOgUkedag(fomArg)} ${SKILLETEGN_PERIODE} ${tilLesbarDatoMedArstallOgUkedag(tomArg)}`
 }
 
 export const tilLesbarPeriodeUtenArstall = (fomArg: any, tomArg: any) => {
@@ -85,7 +124,7 @@ export const ukeDatoListe = (min: string, max: string) => {
     return ukeListe
 }
 
-export const dayjsToDate = (dato: string) => {
+export const dayjsToDate = (dato: string | dayjs.Dayjs) => {
     return dato !== null ? dayjs(dato).toDate() : null
 }
 
