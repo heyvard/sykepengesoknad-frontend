@@ -17,6 +17,7 @@ import Perioder from './typer/perioder'
 import RadioKomp from './typer/radio-komp'
 import TallKomp from './typer/tall-komp'
 import UkjentSporsmal from './typer/ukjent-sporsmal'
+import { Losning2Kalender } from './typer/losning2kalender'
 
 interface UndersporsmalProps {
     sporsmal: Sporsmal
@@ -38,6 +39,9 @@ const SporsmalSwitch = ({ sporsmal }: UndersporsmalProps) => {
 
         case RSSvartype.DATOER:
             return <DagerKomp sporsmal={sporsmal} />
+
+        case RSSvartype.LOSNING2KALENDER:
+            return <Losning2Kalender sporsmal={sporsmal} />
 
         case RSSvartype.JA_NEI:
             if (
