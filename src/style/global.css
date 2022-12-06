@@ -17,3 +17,12 @@
 html {
     --desktop-limit-width: 672px;
 }
+
+.navds-toggle-group--small > .navds-toggle-group__button {
+    width: 50px;
+}
+
+.navds-toggle-group__button[aria-pressed='true'],
+.navds-toggle-group__button[aria-checked='true'] {
+    background-color: #404040;
+}
