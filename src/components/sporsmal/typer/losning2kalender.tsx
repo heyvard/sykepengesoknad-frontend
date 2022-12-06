@@ -1,83 +1,41 @@
-import { Label, TextField, ToggleGroup } from '@navikt/ds-react'
+import { BodyShort, Radio, RadioGroup, TextField } from '@navikt/ds-react'
 import React, { useState } from 'react'
-import { UNSAFE_DatePicker } from '@navikt/ds-react'
-import dayjs from 'dayjs'
 
 import Vis from '../../vis'
 import { SpmProps } from '../sporsmal-form/sporsmal-form'
 import { tilLesbarPeriodeMedArstall } from '../../../utils/dato-utils'
-import Utvidbar from '../../utvidbar/utvidbar'
 
 export const Losning2Kalender = ({ sporsmal }: SpmProps) => {
     const [timerProsent, setTimerProsent] = useState<'Timer' | '%'>('Timer')
 
+    const labelen =
+        timerProsent == 'Timer'
+            ? 'Oppgi totalt antall timer du jobbet i perioden ' +
+              tilLesbarPeriodeMedArstall(sporsmal.min, sporsmal.max) +
+              ':'
+            : 'Oppgi total prosent du jobbet i perioden ' + tilLesbarPeriodeMedArstall(sporsmal.min, sporsmal.max) + ':'
+    const eksempel = timerProsent == 'Timer' ? 'Eksempel: 7,5 ' : 'Eksempel: 40% '
     return (
         <Vis
             hvis={sporsmal.sporsmalstekst}
-            render={() => (
-                <div style={{ paddingTop: '2em' }}>
-                    <Label as="h2" className="skjema__sporsmal">
-                        Oppgi total arbeidsmengde du jobbet i denne perioden:
-                    </Label>
-                    <div style={{ display: 'flex' }}>
-                        <TextField style={{ width: '200px' }} label={''} />
-                        <Label
-                            style={{
-                                display: 'flex',
-                                margin: 'auto',
-                                fontWeight: 400,
-                                color: '#595959',
-                                width: '100%',
-                                textAlign: 'left',
-                                paddingLeft: '1em',
-                            }}
+            render={() => {
+                return (
+                    <div style={{ paddingTop: '2em' }}>
+                        <RadioGroup
+                            legend="Oppgi arbeidsmengde i timer eller prosent:"
+                            onChange={(val) => setTimerProsent(val)}
                         >
-                            {timerProsent}
-                        </Label>
-                    </div>
-                    <div style={{ display: 'flex' }}>
-                        <ToggleGroup
-                            style={{ marginTop: '1em', marginBottom: '1em', padding: '1.5px' }}
-                            value={timerProsent}
-                            size={'small'}
-                            onChange={(e) => setTimerProsent(e as any)}
-                        >
-                            <ToggleGroup.Item value="Timer">7,5</ToggleGroup.Item>
-                            <ToggleGroup.Item value="%">%</ToggleGroup.Item>
-                        </ToggleGroup>
-                        <Label
-                            style={{
-                                display: 'flex',
-                                margin: 'auto',
-                                fontWeight: 400,
-                                color: '#595959',
-                                width: '100%',
-                                marginTop: '1.5em',
-                                textAlign: 'left',
-                                paddingLeft: '1em',
-                            }}
-                        >
-                            Eksempel: 7,5 timer eller 50 %
-                        </Label>
-                    </div>
+                            <Radio value="Timer">Timer</Radio>
+                            <Radio value="%">Prosent</Radio>
+                        </RadioGroup>
 
-                    <Utvidbar
-                        erApen={false}
-                        type="intern"
-                        tittel={
-                            'Se kalender for perioden ' +
-                            tilLesbarPeriodeMedArstall(dayjs(sporsmal.min), dayjs(sporsmal.max))
-                        }
-                    >
-                        <UNSAFE_DatePicker.Standalone
-                            mode="multiple"
-                            min={0}
-                            fromDate={new Date(sporsmal.min!)}
-                            toDate={new Date(sporsmal.max!)}
-                        />
-                    </Utvidbar>
-                </div>
-            )}
+                        <div style={{ marginTop: '1em' }}>
+                            <TextField style={{ width: '200px' }} label={labelen} />
+                        </div>
+                        <BodyShort style={{ color: '#595959' }}>{eksempel}</BodyShort>
+                    </div>
+                )
+            }}
         />
     )
 }
