@@ -26,3 +26,7 @@ html {
 .navds-toggle-group__button[aria-checked='true'] {
     background-color: #404040;
 }
+
+.graadesc .navds-form-field__description {
+    color: #595959;
+}
