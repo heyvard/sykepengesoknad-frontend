@@ -1,6 +1,7 @@
 # sykepengesoknad-frontend
 Søknadsdialog for sykepenger. Bruker next.js.
 
+
 ## Kjør lokalt
 ### Tilgang til Github Package Registry
 
