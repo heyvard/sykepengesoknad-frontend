@@ -15,6 +15,8 @@ I din `.bashrc` eller `.zshrc`, sett følgende miljøvariabel:
 
 
 
+
+
 | brukers handling/logg                                      | skjemanavn | søknadstype | søknadsstatus | spøsmålstag | tekst | svar (hoved) | komponentnavn |
 |------------------------------------------------------------|:----------:|:-----------:|:-------------:|:-----------:|:-----:|:------------:|:-------------:|
 | Åpne skjema                                                |     x      |      x      |       x       |             |       |              |               |
